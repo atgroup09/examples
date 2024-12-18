@@ -1,57 +1,60 @@
-#include <stdint.h>
-#include <stdio.h>
-#include <string.h>
-#include <ctype.h>
-#include <math.h>
+#include <iostream>
+#include <QtGlobal>
+#include <QCoreApplication>
+#include <QDebug>
+
+
+#define OWEN_PARAM_CODE_MAX_SZ      4
 
 #define OWEN_ERR_OK                 0x0
 #define OWEN_ERR_PARAM_EMPTY        0xF3   // ""
 #define OWEN_ERR_PARAM_DOT_FIRST    0xF4   // ".ParamName"
 #define OWEN_ERR_PARAM_DOT_DOUBLE   0xF5   // "..ParamName"
 #define OWEN_ERR_PARAM_INVALID_CHAR 0xF6
+#define OWEN_ERR_PARAM_CODE_SZ      0xF7   // list of parameter code is empty or > OWEN_PARAM_CODE_MAX_SZ
 
 
-uint16_t encodeParamStr(const char *ParamStrIn, int ParamStrLenIn, char *ParamCodeIn)
+quint16 encodeParamStr(const QString &ParamStrIn, QByteArray &ParamCodeIn)
 {
-    uint16_t Result = OWEN_ERR_OK;
-    int i, j;
-    char b;
-    char c, cPrev = ' ';
+    quint16 Result = OWEN_ERR_OK;
+    quint8 i, j;
+    char c, cEnc, cPrev;
 
-    if(ParamStrIn && ParamStrLenIn && ParamCodeIn)
+    if(!ParamStrIn.isEmpty())
     {
-        for(i=0, j=0; i<ParamStrLenIn; i++)
+        ParamCodeIn.clear();
+
+        for(i=0, j=0; i<ParamStrIn.size(); i++)
         {
-            //c = toupper(ParamStrIn[i]);
-            c = ParamStrIn[i];
+            c = ParamStrIn.at(i).toLatin1();
 
             if(c >= '0' && c <= '9')
             {
-                b = c-'0';
+                cEnc = c-'0';
             }
             else if(c >= 'a' && c <= 'z')
             {
-                b = c-'a'+10;
+                cEnc = c-'a'+10;
             }
             else if(c >= 'A' && c <= 'Z')
             {
-                b = c-'A'+10;
+                cEnc = c-'A'+10;
             }
             else if(c == '-')
             {
-                b = 10+26;
+                cEnc = 10+26;
             }
             else if(c == '_')
             {
-                b = 10+26+1;
+                cEnc = 10+26+1;
             }
             else if(c == '/')
             {
-                b = 10+26+2;
+                cEnc = 10+26+2;
             }
             else if(c == ' ')
             {
-                b = 10+26+3;
+                cEnc = 10+26+3;
                 break; //end of ParamName
             }
             else if(c == '.')
@@ -72,7 +75,7 @@ uint16_t encodeParamStr(const char *ParamStrIn, int ParamStrLenIn, char *ParamCo
                     break;
                 }
 
-                ParamCodeIn[j-1]+= 1;
+                ParamCodeIn[j-1] = cEnc+1;
                 continue;
             }
             else
@@ -82,7 +85,8 @@ uint16_t encodeParamStr(const char *ParamStrIn, int ParamStrLenIn, char *ParamCo
                 break;
             }
 
-            ParamCodeIn[j] = b*2;
+            cEnc = cEnc*2;
+            ParamCodeIn[j] = cEnc;
             j++;
             cPrev = c;
         }
@@ -102,7 +106,7 @@ uint16_t encodeParamStr(const char *ParamStrIn, int ParamStrLenIn, char *ParamCo
 }
 
 
-uint16_t hashByte(char ByteIn, uint16_t HashIn)
+quint16 hashByte(char ByteIn, quint16 HashIn)
 {
     for(int i=0; i<7; i++, ByteIn<<=1)
     {
@@ -120,14 +124,17 @@ uint16_t hashByte(char ByteIn, uint16_t HashIn)
     return (HashIn);
 }
 
-uint16_t hashParamCode(const char *ParamCodeIn, uint16_t *HashIn)
+
+quint16 hashParamCode(const QByteArray &ParamCodeIn, quint16 *HashIn)
 {
     uint16_t Result = OWEN_ERR_OK;
-    *HashIn = 0;
+    int sz = ParamCodeIn.size();
 
-    if(ParamCodeIn)
+    if(!ParamCodeIn.isEmpty() && sz <= OWEN_ERR_PARAM_CODE_SZ)
     {
-        for(int i=0; i<4; i++)
+        *HashIn = 0;
+
+        for(int i=0; i<sz; i++)
         {
             *HashIn = hashByte(ParamCodeIn[i]<<1, *HashIn);
         }
@@ -142,25 +149,28 @@ uint16_t hashParamCode(const char *ParamCodeIn, uint16_t *HashIn)
 }
 
 
-int main()
+
+int main(int argc, char *argv[])
 {
-    char Param[10] = "A.Len";
+    QCoreApplication a(argc, argv);
 
-    char ParamCode[4];
-    uint16_t Hash;
-    uint16_t Result;
+    QString Param = QString("r-L");
 
-    printf("%s\r\n", &Param[0]);
-    Result = encodeParamStr(&Param[0], strlen(&Param[0]), &ParamCode[0]);
-    printf("- encodeParamStr.result: %d\r\n", Result);
-    for(int i=0; i<4; i++)
+    QByteArray ParamCode;
+    quint16 Hash;
+    quint16 Result;
+
+    qDebug() << QString("%1").arg(Param);
+    Result = encodeParamStr(Param, ParamCode);
+    qDebug() << QString("- encodeParamStr.Result: %1").arg(QString::number(Result));
+    for(int i=0; i<ParamCode.size(); i++)
     {
-        printf("%d\r\n", ParamCode[i]);
+        qDebug() << (quint8)ParamCode.at(i);
     }
 
-    Result = hashParamCode(&ParamCode[0], &Hash);
-    printf("- hashParamCode.result: %d\r\n", Result);
-    printf("- hash: 0x%04x\n\r", Hash);
+    Result = hashParamCode(ParamCode, &Hash);
+    qDebug() << QString("- hashParamCode.Result: %1").arg(QString::number(Result));
+    qDebug() << QString("- hash: %1").arg(QString::number(Hash, 16));
 
-    return (0);
+    return a.exec();
 }
