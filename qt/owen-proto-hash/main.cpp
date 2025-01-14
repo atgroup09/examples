@@ -3,6 +3,8 @@
 #include <QCoreApplication>
 #include <QDebug>
 
+#include "type.h"
+
 
 #define OWEN_PARAM_CODE_MAX_SZ      4
 
@@ -148,6 +150,11 @@ quint16 hashParamCode(const QByteArray &ParamCodeIn, quint16 *HashIn)
     return (Result);
 }
 
+
+typedef union {
+    quint16 data;
+    char    chars[2];
+} WORD_uct;
 
 
 int main(int argc, char *argv[])
