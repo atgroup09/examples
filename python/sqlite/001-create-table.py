@@ -1,7 +1,10 @@
-# @page SQLite: test
+# @page SQLite: CREATE DATABASE AND TABLE
 
 # https://sqlitebrowser.org/
 # https://habr.com/ru/articles/754400/
+
+# How to execute the script:
+# python.exe 001-crerate-table.py
 
 import sqlite3;
 
@@ -13,11 +16,16 @@ cursor     = connection.cursor();
 cursor.execute('''
 CREATE TABLE IF NOT EXISTS my_table 
 (
-  id  INTEGER PRIMARY KEY,
+  tag TEXT,
   ts  INTEGER,
   val INTEGER
 )
 ''');
+
+# the table fields:
+# - tag - tag/variable name
+# - ts  - timestamp
+# - val - tag/variable value
 
 # save changes and close connection
 connection.commit();

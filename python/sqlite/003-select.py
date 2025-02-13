@@ -1,7 +1,13 @@
-# @page SQLite: test
+# @page SQLite: SELECT
 
 # https://sqlitebrowser.org/
 # https://habr.com/ru/articles/754400/
+
+# Select all rows and all fields from the database table
+# python.exe 003-select.py
+
+# Example:
+# python.exe 003-select.py
 
 import sqlite3;
 import time;
@@ -10,15 +16,15 @@ import time;
 connection = sqlite3.connect("my_database.db");
 cursor     = connection.cursor();
 
-# select all data
+# select data from the database table
 cursor.execute('SELECT * FROM my_table');
 
-# get result of SELECT as a list
-result_list = cursor.fetchall();
+# copy read rows into result-list
+result = cursor.fetchall();
 
-# print result-list
-for row in result_list:
-  print(row);
+# print the result
+for row in result:
+    print(row);
 
 # close connection
 connection.close();
